@@ -2,6 +2,8 @@ import { nowLocalIso } from "@/lib/db";
 import { runTool } from "@/lib/tools";
 import type { AgentChunk } from "@/lib/types";
 
+export const maxDuration = 30;
+
 // Scripted turn that runs real tools without the LLM: a no-key preview of every
 // card type, and a fallback for the live demo if the network dies. Open /?demo.
 

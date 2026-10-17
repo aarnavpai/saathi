@@ -10,6 +10,8 @@ around an animated character while it answers out loud.
 
 Built end to end on [Sarvam AI](https://www.sarvam.ai).
 
+**Live demo: [saathi-orpin.vercel.app](https://saathi-orpin.vercel.app/)**
+
 ---
 
 ## Features
@@ -62,6 +64,7 @@ first load, so later questions are instant.
 | `npm run seed` | Create any missing demo files in `workspace/` |
 | `npm run seed:reset` | Wipe `workspace/` **and** the database (mail, calendar, memories, OCR cache) back to the demo state |
 | `npm run smoke` | Call each Sarvam API once and report ✓/✗ with latency |
+| `npm run export:ocr` | Save the local OCR cache to `seed/ocr-cache.json` (shipped with deployments) |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run lint` / `npm run format` | Biome |
 
@@ -77,6 +80,30 @@ first load, so later questions are instant.
 | `SARVAM_CHAT_MODEL` | `sarvam-105b` | |
 | `SARVAM_STT_MODEL` | `saaras:v4` | |
 | `SARVAM_STT_MODE` | `transcribe` | Also: `codemix`, `translit`, `translate` |
+
+### Deploying to Vercel
+
+Live at **https://saathi-orpin.vercel.app/**. To deploy your own:
+
+1. Import the repo in Vercel (framework preset: Next.js, Node 24 via `engines`).
+2. Add the environment variable `SARVAM_API_KEY` (and optionally `SAATHI_USER_NAME`).
+3. Deploy.
+
+How it runs on serverless:
+
+- The filesystem is read-only except `/tmp`, so on each cold start the bundled
+  `workspace/` is copied to `/tmp/saathi/workspace` and the SQLite DB lives at
+  `/tmp/saathi/saathi.db`. Notes, uploads, sent mail and new events work, but are
+  **per instance and reset on cold start**. That's fine for a demo; use real storage
+  for anything persistent.
+- `workspace/` and `seed/` are bundled into the API routes via
+  `outputFileTracingIncludes` in `next.config.ts`.
+- `seed/ocr-cache.json` pre-fills the OCR cache, so the demo documents never need to
+  be re-read on a fresh instance. If you change the demo documents, run the app
+  locally until they're indexed, then run `npm run export:ocr` and commit the result.
+- Uploads are capped at 4 MB on Vercel because of its request body limit.
+- The agent and prewarm routes set `maxDuration = 120`, and background OCR is kept
+  alive with `after()`.
 
 ---
 
@@ -143,7 +170,8 @@ src/app/            page + API routes (agent, stt, tts, file, upload, email, pre
 src/components/     Saathi (page), Character (animated SVG), Cards (one per UI event)
 src/lib/            sarvam client, agent loop, tools, workspace sandbox, documents/OCR cache, db
 src/lib/client/     mic recorder (WAV encoder + VAD) and audio player (analyser)
-scripts/            seed-workspace.mjs, smoke-sarvam.mjs
+scripts/            seed-workspace.mjs, smoke-sarvam.mjs, export-ocr-cache.mjs
+seed/               ocr-cache.json — pre-computed document text for deployments
 workspace/          the sandbox Saathi can see
 data/               SQLite database (gitignored)
 doc/                design docs

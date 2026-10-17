@@ -1,5 +1,7 @@
 import { textToSpeech } from "@/lib/sarvam";
 
+export const maxDuration = 30;
+
 export async function POST(req: Request) {
   try {
     const { text, lang } = (await req.json()) as { text: string; lang: string };

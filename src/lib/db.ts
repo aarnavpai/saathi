@@ -2,11 +2,20 @@ import fs from "node:fs";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import type { CalEvent, Contact, Email } from "./types";
+import { ON_SERVERLESS, ROOT } from "./workspace";
 
 // Single SQLite file backing the mock "online services" (mail, calendar,
 // contacts), the assistant's long-term memory and the Doc AI OCR cache.
 
-const DB_PATH = path.resolve(process.env.SAATHI_DB ?? "data/saathi.db");
+const DB_PATH = path.resolve(
+  process.env.SAATHI_DB ??
+    (ON_SERVERLESS ? "/tmp/saathi/saathi.db" : "data/saathi.db"),
+);
+
+// OCR output for the demo documents, committed so a fresh deployment answers
+// instantly instead of re-reading every document after each cold start.
+// Regenerate with `npm run export:ocr`.
+const OCR_SEED = path.resolve("seed/ocr-cache.json");
 
 const g = globalThis as unknown as { __saathiDb?: DatabaseSync };
 
@@ -31,6 +40,7 @@ export function db(): DatabaseSync {
       path TEXT PRIMARY KEY, mtime INTEGER, markdown TEXT, updated_at TEXT);
   `);
   seed(d);
+  seedOcr(d);
   g.__saathiDb = d;
   return d;
 }
@@ -197,6 +207,31 @@ function seed(d: DatabaseSync) {
     "Prefers short answers, and switches between Hindi and English.",
     new Date().toISOString(),
   );
+}
+
+function seedOcr(d: DatabaseSync) {
+  if (!fs.existsSync(OCR_SEED)) return;
+  const entries = JSON.parse(fs.readFileSync(OCR_SEED, "utf8")) as {
+    path: string;
+    size: number;
+    markdown: string;
+  }[];
+  const insert = d.prepare(
+    "INSERT OR IGNORE INTO doc_cache (path, mtime, markdown, updated_at) VALUES (?, ?, ?, ?)",
+  );
+  for (const e of entries) {
+    try {
+      // Keyed by the file's mtime here; only trust it if the size still matches.
+      const st = fs.statSync(path.join(ROOT, e.path));
+      if (st.size !== e.size) continue;
+      insert.run(
+        e.path,
+        Math.floor(st.mtimeMs),
+        e.markdown,
+        new Date().toISOString(),
+      );
+    } catch {}
+  }
 }
 
 // ---------- row mappers ----------

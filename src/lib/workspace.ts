@@ -1,9 +1,23 @@
+import { cpSync, existsSync } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import type { FileEntry, FileKind } from "./types";
 
+// The workspace shipped with the app. Serverless filesystems (Vercel) are
+// read-only except /tmp, so there it is copied to /tmp on first use and the
+// assistant works on the copy (per instance, reset on cold start).
+const BUNDLED = path.resolve("workspace");
+export const ON_SERVERLESS = Boolean(process.env.VERCEL);
+
 // Every file the assistant touches is confined to this directory.
-export const ROOT = path.resolve(process.env.WORKSPACE_DIR ?? "workspace");
+export const ROOT = path.resolve(
+  process.env.WORKSPACE_DIR ??
+    (ON_SERVERLESS ? "/tmp/saathi/workspace" : "workspace"),
+);
+
+if (ROOT !== BUNDLED && !existsSync(ROOT) && existsSync(BUNDLED)) {
+  cpSync(BUNDLED, ROOT, { recursive: true });
+}
 
 const TEXT_EXT = new Set([
   ".md",

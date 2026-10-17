@@ -1,5 +1,7 @@
 import { speechToText } from "@/lib/sarvam";
 
+export const maxDuration = 30;
+
 export async function POST(req: Request) {
   try {
     const form = await req.formData();

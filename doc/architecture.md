@@ -126,6 +126,17 @@ document it's usually cached. If it isn't, the tool first emits a `loading`
 file card (scanning animation) and replaces it with the same card id once the
 text is ready.
 
+## Serverless (Vercel)
+
+When `VERCEL` is set, `workspace.ts` copies the bundled `workspace/` to
+`/tmp/saathi/workspace` on first use, and `db.ts` opens `/tmp/saathi/saathi.db`,
+because `/tmp` is the only writable path. On DB creation, `seed/ocr-cache.json` is
+loaded into `doc_cache`. Entries are matched by path and **file size**, since mtimes
+change when files are copied, so fresh instances start with every demo document
+already OCR'd. `next.config.ts` bundles `workspace/` and `seed/` into every
+`/api/**` function with `outputFileTracingIncludes`. All of this state is per
+instance and disappears on cold start.
+
 ## Security boundaries
 
 - **Filesystem sandbox.** Every path goes through `resolveSafe()`, which

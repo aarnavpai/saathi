@@ -1,6 +1,8 @@
 import { runAgent } from "@/lib/agent";
 import type { AgentChunk, ChatTurn } from "@/lib/types";
 
+export const maxDuration = 120;
+
 // Streams NDJSON: status lines and UI cards while tools run, then the reply.
 export async function POST(req: Request) {
   const { history, text, lang } = (await req.json()) as {

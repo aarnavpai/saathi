@@ -51,10 +51,14 @@ export async function readDocument(rel: string): Promise<string> {
   return job;
 }
 
-/** Kick off OCR for every uncached PDF/image, one at a time, in the background. */
+/**
+ * OCR every uncached PDF/image, one at a time. Returns immediately; `done`
+ * resolves when the background work finishes (pass it to `after()`).
+ */
 export async function prewarm(kick = true): Promise<{
   queued: string[];
   cached: string[];
+  done: Promise<void>;
 }> {
   const docs = (await walk()).filter(
     (e) => e.kind === "doc" || e.kind === "image",
@@ -64,17 +68,18 @@ export async function prewarm(kick = true): Promise<{
   for (const e of docs) {
     (cachedDocument(e.path, e.mtime) === null ? queued : cached).push(e.path);
   }
-  if (kick && queued.length) {
-    (async () => {
-      for (const p of queued) {
-        try {
-          await readDocument(p);
-          console.log(`[prewarm] read ${p}`);
-        } catch (err) {
-          console.warn(`[prewarm] ${p}:`, (err as Error).message);
-        }
-      }
-    })();
-  }
-  return { queued, cached };
+  const done =
+    kick && queued.length
+      ? (async () => {
+          for (const p of queued) {
+            try {
+              await readDocument(p);
+              console.log(`[prewarm] read ${p}`);
+            } catch (err) {
+              console.warn(`[prewarm] ${p}:`, (err as Error).message);
+            }
+          }
+        })()
+      : Promise.resolve();
+  return { queued, cached, done };
 }

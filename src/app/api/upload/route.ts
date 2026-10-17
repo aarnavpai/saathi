@@ -1,6 +1,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { entryFor, kindOf, resolveSafe } from "@/lib/workspace";
+import { entryFor, kindOf, ON_SERVERLESS, resolveSafe } from "@/lib/workspace";
+
+export const maxDuration = 30;
 
 // Drag-and-drop onto the page: files land in workspace/Uploads/.
 export async function POST(req: Request) {
@@ -17,9 +19,11 @@ export async function POST(req: Request) {
         { status: 415 },
       );
     }
-    if (file.size > 20 * 1024 * 1024) {
+    // Vercel caps request bodies at 4.5 MB.
+    const maxMb = ON_SERVERLESS ? 4 : 20;
+    if (file.size > maxMb * 1024 * 1024) {
       return Response.json(
-        { error: "File too large (20 MB max)" },
+        { error: `File too large (${maxMb} MB max)` },
         { status: 413 },
       );
     }

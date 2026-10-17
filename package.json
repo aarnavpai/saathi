@@ -2,6 +2,9 @@
   "name": "sarvam",
   "version": "0.1.0",
   "license": "AGPL-3.0-only",
+  "engines": {
+    "node": "24.x"
+  },
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -12,7 +15,8 @@
     "seed": "node scripts/seed-workspace.mjs",
     "seed:reset": "node scripts/seed-workspace.mjs --reset",
     "typecheck": "tsc --noEmit",
-    "smoke": "node --env-file=.env.local scripts/smoke-sarvam.mjs"
+    "smoke": "node --env-file=.env.local scripts/smoke-sarvam.mjs",
+    "export:ocr": "node scripts/export-ocr-cache.mjs"
   },
   "dependencies": {
     "fflate": "^0.8.3",
