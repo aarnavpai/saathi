@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: sans-serif;
+  --font-mono: monospace;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  background: #07060d;
+  color: #fff;
+}
+
+::selection {
+  background: rgb(167 139 250 / 0.4);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(255 255 255 / 0.15) transparent;
+}
